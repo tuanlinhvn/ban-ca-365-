@@ -1,0 +1,304 @@
+using AutoItX3Lib;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Net;
+using System.Security.Policy;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+
+namespace BanCa365
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+            error = (Bitmap)Bitmap.FromFile("error.png");
+        }
+        Bitmap error;
+        private void button1_Click(object sender, EventArgs e)
+        {
+            ChromeDriver driver;
+            WebDriverWait wait;
+            int sl = 0;
+            do
+            {
+                //ChangeIP(textBox1.Text);
+                driver = new ChromeDriver();
+                wait = new WebDriverWait(driver, TimeSpan.FromSeconds(90));
+                driver.Manage().Window.Maximize();
+                string[] info = Information();
+                driver.Navigate().GoToUrl("https://banca365.club/");
+                wait.Until(ExpectedConditions.ElementToBeClickable(By.Id("cre-register-button"))).Click();
+
+                driver.FindElementById("register-accountName").SendKeys(info[0]);
+                Thread.Sleep(1000);
+                driver.FindElementById("register-passWord").SendKeys(info[1]);
+                Thread.Sleep(1000);
+                
+                driver.FindElementById("register-re-passWord").SendKeys(info[1]);
+                Thread.Sleep(2000);
+
+                bool checkError = false;
+                do
+                {
+                    GetCapcha(driver);
+                    string resultCap = captcharesult("rqbkrmqgxz2n6jz9d8fbkcyp4djfwwyv", "capcha.png");
+                    driver.FindElementById("input-register-captcha").SendKeys(resultCap);
+                    Thread.Sleep(1000);
+                    driver.FindElementById("register-button").Click();
+                    Thread.Sleep(1000);
+                    checkError = CheckError(driver);
+                    if (checkError == false)
+                    {
+                        WriteInfo(info, "Acc.txt");
+                        Thread.Sleep(1000);
+                        KAutoHelper.AutoControl.MouseClick(682, 478); // click confirm ten nguoi dung
+                        sl++;
+                    }
+                    else
+                    {
+                        KAutoHelper.AutoControl.SendKeyPress(KAutoHelper.KeyCode.ENTER);
+                        //KAutoHelper.AutoControl.MouseClick(680, 529); // confirm vao ok co loi
+                    }
+                } while (checkError == true);
+
+                Thread.Sleep(TimeSpan.FromSeconds(70));
+                KAutoHelper.AutoControl.MouseClick(950, 264);               
+                driver.Quit();
+            } while (sl < 200);
+        }
+
+        bool CheckError(ChromeDriver driver)
+        {
+            driver.GetScreenshot().SaveAsFile("screen.png");
+            Bitmap screen = (Bitmap)Bitmap.FromFile("screen.png");
+            var Checkerror = KAutoHelper.ImageScanOpenCV.Find(screen, error);
+            if (Checkerror != null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        void GetCapcha(ChromeDriver driver)
+        {
+            driver.GetScreenshot().SaveAsFile("out.png");
+            Bitmap screen = (Bitmap)Bitmap.FromFile("out.png");
+            KAutoHelper.CaptureHelper.CropImage(screen, new Rectangle(671, 353, 120, 51)).Save("capcha.png");
+        }
+      
+        void WriteInfo(string[] info, string profilePath)
+        {
+            File.AppendAllText(profilePath, info[0] + "|" + info[1] + "\n");
+        }
+        string[] Information()
+        {
+            string[] firstName =
+            {
+                "Quang", "Vu", "Quyet", "Thang",
+                "Quy", "Nhan", "Lam", "Phuong", "Nam",
+                "Nguyen", "Bich", "Ngoc", "Duong", "Huyen",
+                "Phong", "Thanh", "Hang", "Tu", "Yen", "Tam", "Sang", "Vong"
+            };
+            string[] lastName =
+            {
+                "Vu", "Vo", "Nguyen", "Dang", "Hoang", "Duong", "Pham", "Dinh",
+                "Bac", "Me", "Thanh", "Nguyet", "Le", "Trinh"
+            };
+
+            string res = "";
+            string email = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890";
+            for (int i = 0; i < 5; i++)
+            {
+                res += email[RdNum(0, email.Length)];
+                Thread.Sleep(100);
+            }
+
+            return new string[] { firstName[RdNum(0, 22)] + lastName[RdNum(0, 13)] + res, "Vd123" + res };
+        }
+        int RdNum(int start, int end)
+        {
+            Random rd = new Random();
+            return rd.Next(start, end);
+        }
+        void ChangeIP(string ip)
+        {
+            string oldIP = GetPublicIP();
+            RunCMD(ip);
+            
+            int count = 0;
+            do
+            {
+                if (oldIP != GetPublicIP())
+                {
+                    break;
+                }
+                if (count > 17)
+                {
+                    RunCMD("Japan");
+                    count = 0;
+                }
+                count++;
+                Thread.Sleep(1000);
+            } while (true);
+            Console.WriteLine("Change ip thanh cong");
+        }
+
+        void RunCMD(string country)
+        {
+            string path = @"C:\Program Files (x86)\NordVPN\";
+            Process p = new Process();
+            StreamWriter sw;
+
+            ProcessStartInfo psI = new ProcessStartInfo("cmd");
+            psI.UseShellExecute = false;
+            psI.RedirectStandardInput = true;
+            psI.RedirectStandardOutput = true;
+            psI.RedirectStandardError = true;
+            psI.CreateNoWindow = true;
+            p.StartInfo = psI;
+            p.Start();
+            sw = p.StandardInput;
+
+            //
+            sw.AutoFlush = true;
+            sw.WriteLine("cd /d" + path);
+            sw.WriteLine("nordvpn -d");
+            Thread.Sleep(4000);
+            sw.WriteLine("nordvpn -c -g \"" + country + "\"");
+            Thread.Sleep(5000);
+            sw.Close();
+        }
+        static string GetPublicIP()
+        {
+            string a4 = "";
+            int timeOut = 0;
+            do
+            {
+                timeOut++;
+                try
+                {
+                    string url = "http://checkip.dyndns.org";
+                    System.Net.WebRequest req = System.Net.WebRequest.Create(url);
+                    System.Net.WebResponse resp = req.GetResponse();
+                    System.IO.StreamReader sr = new System.IO.StreamReader(resp.GetResponseStream());
+                    string response = sr.ReadToEnd().Trim();
+                    string[] a = response.Split(':');
+                    string a2 = a[1].Substring(1);
+                    string[] a3 = a2.Split('<');
+                    a4 = a3[0];
+                    return a4;
+                }
+                catch (Exception ex)
+                {
+                    Thread.Sleep(1000);
+                }
+            } while (timeOut < 20);
+            return a4;
+        }
+        public static String gethtmlform(string Url) //htmlform
+        {
+
+            HttpWebRequest myRequest = (HttpWebRequest)WebRequest.Create(Url);
+            myRequest.Method = "GET";
+            WebResponse myResponse = myRequest.GetResponse();
+            StreamReader sr = new StreamReader(myResponse.GetResponseStream(), System.Text.Encoding.UTF8);
+            string result = sr.ReadToEnd();
+            sr.Close();
+            myResponse.Close();
+
+            return result;
+        }
+        public static byte[] ImageToByte2(System.Drawing.Image img)
+        {
+            using (var stream = new MemoryStream())
+            {
+                img.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                return stream.ToArray();
+            }
+        }
+        public string captcharesult(string apiKey, string filePath)  //captcharesult
+        {
+            //POST
+            try
+            {
+                Bitmap capcha = (Bitmap)Bitmap.FromFile(filePath);
+                System.Net.ServicePointManager.Expect100Continue = false;
+                var request = (HttpWebRequest)WebRequest.Create("http://azcaptcha.com/in.php");
+                string base64string = Convert.ToBase64String(ImageToByte2(capcha));
+                var postData = "method=base64&key=" + apiKey + "&body=" + WebUtility.UrlEncode(base64string);
+
+                var data = Encoding.ASCII.GetBytes(postData);
+
+                request.Method = "POST";
+
+                request.ContentType = "application/x-www-form-urlencoded";
+                request.ContentLength = data.Length;
+
+                using (var stream = request.GetRequestStream())
+                {
+                    stream.Write(data, 0, data.Length);
+                }
+
+                var response = (HttpWebResponse)request.GetResponse();
+
+                string responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                if (responseString.Contains("OK|"))
+                {
+                    //  GET
+                    string captcha = "";
+
+                    while (true)
+                    {
+                        captcha = gethtmlform("http://azcaptcha.com/res.php?key=" + apiKey + "&action=get&id=" + responseString.Split('|')[1]);
+                        if (captcha == "CAPCHA_NOT_READY")
+                        {
+                            System.Threading.Thread.Sleep(5000);
+                            continue;
+                        }
+                        if (captcha == "_")
+                        {
+                            System.Threading.Thread.Sleep(5000);
+                            continue;
+                        }
+
+                        if (captcha.Contains("OK|"))
+                        {
+                            captcha = captcha.Replace("OK|", "");
+
+                        }
+                        return captcha;
+
+                    }
+                }
+                return "";
+            }
+            catch (Exception e)
+            {
+                string tt = e.Message;
+                return tt;
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            KAutoHelper.AutoControl.SendKeyPress(KAutoHelper.KeyCode.ENTER); // confirm vao ok co loi
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
