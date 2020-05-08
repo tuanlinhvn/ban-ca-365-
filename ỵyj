@@ -1,0 +1,215 @@
+#include <Wire.h> 
+// #include <LiquidCrystal_I2C.h>    // add thư viện online 
+// LiquidCrystal_I2C lcd(0x3F,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+////////////////////////////
+// KHOI TAO THU VIEN LCD 
+ #include <LiquidCrystal.h>            // KHOI TAO THU VIEN    
+ LiquidCrystal lcd(7, 6, 5, 4, 3, 2); // CAC CHAN KET NOI LEN LCD   
+
+unsigned long tgian_htai = 0;
+unsigned long tgian_truocdo = 0;
+
+const int van_xa_1= 6; // thường đóng 
+const int van_xa_2= 7; // thường đóng
+
+const int khoa_van_1= 9; // thường hở
+const int khoa_van_2=10; // thường hở
+
+const int van_ra = 11;   // thường đóng (hở) tùy ý \
+/* khai báo nút nhấn 1 tăng thông số áp suất vào */ 
+const int  chan_nut_nhan_1 = 12;// hằng số buttonPin mang giá trị là chân digital được nối với button
+// Các biến này có thể thay đổi giá trị được
+int trang_thai_nut_nhan_1 = 0;         // trạng thái hiện tại của button
+int trang_thai_nut_nhan_1_truoc = 0;     // trạng thái trước đó của button
+int dem_so_lan_nhan_1 = 0;   // số lần button được nhấn
+
+/* khai báo nút nhấn 2 giảm thông số áp suất vào */ 
+const int  chan_nut_nhan_2 = 13;// hằng số buttonPin mang giá trị là chân digital được nối với button
+// Các biến này có thể thay đổi giá trị được
+int trang_thai_nut_nhan_2 = 0;         // trạng thái hiện tại của button
+int trang_thai_nut_nhan_2_truoc = 0;     // trạng thái trước đó của button
+int dem_so_lan_nhan_2 = 0;   // số lần button được nhấn
+
+/* khai báo nút nhấn 3 tăng thông số áp suất ra */ 
+const int  chan_nut_nhan_3 = 4;// hằng số buttonPin mang giá trị là chân digital được nối với button
+// Các biến này có thể thay đổi giá trị được
+int trang_thai_nut_nhan_3 = 0;         // trạng thái hiện tại của button
+int trang_thai_nut_nhan_3_truoc = 0;     // trạng thái trước đó của button
+int dem_so_lan_nhan_3 = 0;   // số lần button được nhấn
+
+/* khai báo nút nhấn 4 tăng thông số áp suất ra */ 
+const int  chan_nut_nhan_4 = 5;// hằng số buttonPin mang giá trị là chân digital được nối với button
+// Các biến này có thể thay đổi giá trị được
+int trang_thai_nut_nhan_4 = 0;         // trạng thái hiện tại của button
+int trang_thai_nut_nhan_4_truoc = 0;     // trạng thái trước đó của button
+int dem_so_lan_nhan_4 = 0;   // số lần button được nhấn
+
+float gia_tri_nhap_vao_dong_ho_1= 323; // x 0.01 để thành 3.23
+float gia_tri_nhap_vao_dong_ho_2= 291;
+
+int tin_hieu_dong_ho_1 = A2 ; // đo áp suất đầu vào
+int tin_hieu_dong_ho_2 = A3 ; // đo áp suất đầu ra
+
+int cho_phep_xa = 0;     //biến nhớ trạng thái đủ điều kiện xả chéo
+int chay_1_lan_ben_phai = 0;     // biến nhớ trạng thái xa loc 1 đi bên phải trước 
+int chay_1_lan_ben_trai = 0;     // biến nhớ trạng thái xa loc 2 đi bên trái trước '
+
+void setup() 
+{
+      Serial.begin(9600);  // MO CONG SERIAL VOI TOC DO GIAO TIEP 9600     
+     // lcd.init();  
+    //  lcd.backlight();
+    
+      lcd.begin(16, 2);   // KHAI BAO DUNG LCD 16 X 2     
+      lcd.clear();              
+      lcd.setCursor(0,0);
+      lcd.print(" ");   //  hàng 1
+      lcd.setCursor(0,1);
+      lcd.print( " " ); // hàng 2
+      
+     pinMode(van_xa_1, OUTPUT); 
+     pinMode(van_xa_2, OUTPUT); 
+     
+     pinMode(khoa_van_1, OUTPUT); 
+     pinMode(khoa_van_2, OUTPUT); 
+     
+     pinMode(van_ra, OUTPUT); 
+ 
+     pinMode(chan_nut_nhan_1,INPUT); // Cài đặt button là INPUT
+     
+     //Đối với một chân analog không cần pinMode
+
+      tgian_htai = millis();
+}
+
+void loop() 
+{
+
+    trang_thai_nut_nhan_1 = digitalRead(chan_nut_nhan_1); // đọc trạng thái nút bấm tăng giá trị đầu vào      
+    trang_thai_nut_nhan_2 = digitalRead(chan_nut_nhan_2); // đọc trạng thái nút bấm giảm giá trị đầu vào     
+    trang_thai_nut_nhan_3 = digitalRead(chan_nut_nhan_3); // đọc trạng thái nút bấm tăng giá trị đầu ra
+    trang_thai_nut_nhan_4 = digitalRead(chan_nut_nhan_4); // đọc trạng thái nút bấm giảm giá trị đầu ra
+   /*@@@@@   nút nhấn 1 tăng thông số áp suất vào   @@@@@*/ 
+   if (trang_thai_nut_nhan_1 != trang_thai_nut_nhan_1_truoc)  // so sánh với giá trị trước đó
+         {
+          if (trang_thai_nut_nhan_1 == HIGH) // Nếu trạng thái bây giờ là button đang được nhấn thì hiển nhiên trước đó là button chưa được nhấn (điều kiện trên) tăng số lần nhấn button lên 1
+            {               
+              dem_so_lan_nhan_1++;  // đếm số lần nhấn cho vui
+              gia_tri_nhap_vao_dong_ho_1 = gia_tri_nhap_vao_dong_ho_1 + 12 ; 
+            }
+          else 
+            {
+              // Nếu trạng thái bây giờ là button đang được THẢ thì hiển nhiên trước đó là button đang được nhấn (điều kiện trên)  thông báo là button đang được thả và không làm gì cả
+            }
+        }  
+      trang_thai_nut_nhan_1_truoc = trang_thai_nut_nhan_1; // lưu lại trạng thái button cho lần kiểm tra tiếp theo
+    /*@@@@@   nút nhấn 2 giảm thông số áp suất vào   @@@@@*/ 
+  if (trang_thai_nut_nhan_2 != trang_thai_nut_nhan_2_truoc)  // so sánh với giá trị trước đó
+           {
+            if (trang_thai_nut_nhan_2 == HIGH) // Nếu trạng thái bây giờ là button đang được nhấn thì hiển nhiên trước đó là button chưa được nhấn (điều kiện trên) tăng số lần nhấn button lên 1
+              {               
+                dem_so_lan_nhan_2++; // đếm số lần nhấn cho vui
+                gia_tri_nhap_vao_dong_ho_1 = gia_tri_nhap_vao_dong_ho_1 - 12 ; 
+              }
+            else 
+              {
+                // Nếu trạng thái bây giờ là button đang được THẢ thì hiển nhiên trước đó là button đang được nhấn (điều kiện trên) thông báo là button đang được thả và không làm gì cả
+              }
+          }  
+        trang_thai_nut_nhan_2_truoc = trang_thai_nut_nhan_2; // lưu lại trạng thái button cho lần kiểm tra tiếp theo
+   /*@@@@@   nút nhấn 3 tăng thông số áp suất ra  @@@@@*/ 
+  if (trang_thai_nut_nhan_3 != trang_thai_nut_nhan_3_truoc)  // so sánh với giá trị trước đó
+           {
+            if (trang_thai_nut_nhan_3 == HIGH) // Nếu trạng thái bây giờ là button đang được nhấn thì hiển nhiên trước đó là button chưa được nhấn (điều kiện trên) tăng số lần nhấn button lên 1
+              {               
+                dem_so_lan_nhan_3++; // đếm số lần nhấn cho vui
+                gia_tri_nhap_vao_dong_ho_2 = gia_tri_nhap_vao_dong_ho_2 + 12 ; 
+              }
+            else 
+              {
+                // Nếu trạng thái bây giờ là button đang được THẢ thì hiển nhiên trước đó là button đang được nhấn (điều kiện trên) thông báo là button đang được thả và không làm gì cả
+              }
+          }  
+        trang_thai_nut_nhan_3_truoc = trang_thai_nut_nhan_3; // lưu lại trạng thái button cho lần kiểm tra tiếp theo
+    /*@@@@@   nút nhấn 4 giảm thông số áp suất ra   @@@@@*/ 
+      if (trang_thai_nut_nhan_4 != trang_thai_nut_nhan_4_truoc)  // so sánh với giá trị trước đó
+         {
+          if (trang_thai_nut_nhan_4 == HIGH) // Nếu trạng thái bây giờ là button đang được nhấn thì hiển nhiên trước đó là button chưa được nhấn (điều kiện trên) tăng số lần nhấn button lên 1
+            {               
+              dem_so_lan_nhan_4++; // đếm số lần nhấn cho vui
+              gia_tri_nhap_vao_dong_ho_2 = gia_tri_nhap_vao_dong_ho_2 - 12 ; 
+            }
+          else 
+            {
+              // Nếu trạng thái bây giờ là button đang được THẢ thì hiển nhiên trước đó là button đang được nhấn (điều kiện trên) thông báo là button đang được thả và không làm gì cả
+            }
+        }  
+      trang_thai_nut_nhan_4_truoc = trang_thai_nut_nhan_4; // lưu lại trạng thái button cho lần kiểm tra tiếp theo
+
+            /* đo kết quả bar */
+    int hien_thi_dong_ho_1 = analogRead(tin_hieu_dong_ho_1);  // đọc analog đồng hồ áp suất đầu vào
+        float ket_qua_dong_ho_1 = hien_thi_dong_ho_1 / 1023.0 * 5.0;  // tùy theo sản phẩm thì có công thức khác 
+        
+    int hien_thi_dong_ho_2 = analogRead(tin_hieu_dong_ho_2); // đọc analog đồng hồ áp suất đầu ra
+        float ket_qua_dong_ho_2 = hien_thi_dong_ho_2 / 1023.0 * 5.0;  // tùy theo sản phẩm thì có công thức khác 
+                 
+      /*  biến đổi giá trị nhấp tay từ 323 thành 3.23 */
+    float   gia_tri_hien_thi_nhap_vao_dong_ho_1 = gia_tri_nhap_vao_dong_ho_1 *0.01 ; // 323*0.01 = 3.23 . sau khi đã nhập thành công 
+    float   gia_tri_hien_thi_nhap_vao_dong_ho_2 = gia_tri_nhap_vao_dong_ho_2 *0.01 ; // 323*0.01 = 3.23 . sau khi đã nhập thành công 
+    
+    if (  ( ket_qua_dong_ho_1 >= gia_tri_hien_thi_nhap_vao_dong_ho_1 ) && (  ket_qua_dong_ho_2  >= gia_tri_hien_thi_nhap_vao_dong_ho_2   )  )// thỏa mãn yêu cầu    
+      {
+         cho_phep_xa = 1;
+         chay_1_lan_ben_phai = 0;  // set lại biến để vào if khúc 5 giây 
+         chay_1_lan_ben_trai = 0;  // set lại biến để vào if khúc 10 giây 
+         tgian_truocdo = tgian_htai;  // set lại thời gian hiện tại bằng thời gian arduino
+         
+      }
+      
+    tgian_htai = millis();
+if      ( cho_phep_xa == 1 )
+    {
+      
+        if   ( (tgian_htai - tgian_truocdo>=5000) && ( chay_1_lan_ben_phai == 0) )  // 5000 millis = 5 giây 
+              {
+                    // xa loc 1 đi bên phải trước  
+                digitalWrite(van_xa_1, HIGH); // thường đóng 
+                 digitalWrite(van_xa_2, LOW); // thường đóng
+                
+                digitalWrite(khoa_van_1, HIGH); // thường hở
+                 digitalWrite(khoa_van_2, LOW); // thường hở
+                
+                digitalWrite(van_ra, HIGH); // thường hở (đóng) tùy ý 
+              }
+
+        if   ( (tgian_htai - tgian_truocdo>=10000) &&  ( chay_1_lan_ben_trai == 0) )// 10000 millis = 10 giây 
+              {
+                       // xa loc 2  đi bên trái
+                   digitalWrite(van_xa_1, LOW); // thường đóng 
+                 digitalWrite(van_xa_2, HIGH); // thường đóng
+                
+                digitalWrite(khoa_van_1, LOW); // thường hở
+                 digitalWrite(khoa_van_2, HIGH); // thường hở
+                
+                digitalWrite(van_ra, HIGH); // thường hở (đóng) tùy ý 
+                chay_1_lan_ben_phai =1;    // chặn vào if phần 10 giây               
+              }
+          if (tgian_htai - tgian_truocdo>=15000)  // 15000 millis = 15 giây 
+              {
+                  // sau 15 giây . kết thúc lọc mở hết ống . khóa van xả
+                   digitalWrite(van_xa_1, LOW); // thường đóng 
+                 digitalWrite(van_xa_2, LOW); // thường đóng
+                
+                digitalWrite(khoa_van_1, LOW); // thường hở
+                 digitalWrite(khoa_van_2, LOW); // thường hở
+                
+                digitalWrite(van_ra, LOW); // thường hở (đóng) tùy ý 
+
+                chay_1_lan_ben_trai =1;     // chặn vào if phần 10 giây               
+                tgian_truocdo = tgian_htai; // thời gian trước đó = thời gian arduino (tgian hiện tại) để ( tgian_htai - tgian_truocdo =0 ) 
+                cho_phep_xa = 0;            //nhưng sẽ không đếm lại do ( cho_phep_xa = 0 ) tức không vào lại vòng lặp
+              }       
+              
+    } 
+ 
+}  // void loop
