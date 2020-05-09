@@ -15,7 +15,7 @@ const int van_xa_2= 7; // thường đóng
 const int khoa_van_1= 9; // thường hở
 const int khoa_van_2=10; // thường hở
 
-const int van_ra = 11;   // thường đóng (hở) tùy ý \
+const int van_ra = 11;   // thường đóng (hở) tùy ý 
 /* khai báo nút nhấn 1 tăng thông số áp suất vào */ 
 const int  chan_nut_nhan_1 = 12;// hằng số buttonPin mang giá trị là chân digital được nối với button
 // Các biến này có thể thay đổi giá trị được
@@ -51,8 +51,9 @@ int tin_hieu_dong_ho_1 = A2 ; // đo áp suất đầu vào
 int tin_hieu_dong_ho_2 = A3 ; // đo áp suất đầu ra
 
 int cho_phep_xa = 0;     //biến nhớ trạng thái đủ điều kiện xả chéo
+int khoa_dk_xa_loc = 0;  // khóa điều kiện xả lọc. chạy xong chu kỳ lọc mới thỏa mãn cho phép xả lần khác 
 int chay_1_lan_ben_phai = 0;     // biến nhớ trạng thái xa loc 1 đi bên phải trước 
-int chay_1_lan_ben_trai = 0;     // biến nhớ trạng thái xa loc 2 đi bên trái trước '
+int chay_1_lan_ben_trai = 0;     // biến nhớ trạng thái xa loc 2 đi bên trái trước 
 
 void setup() 
 {
@@ -157,13 +158,13 @@ void loop()
     float   gia_tri_hien_thi_nhap_vao_dong_ho_1 = gia_tri_nhap_vao_dong_ho_1 *0.01 ; // 323*0.01 = 3.23 . sau khi đã nhập thành công 
     float   gia_tri_hien_thi_nhap_vao_dong_ho_2 = gia_tri_nhap_vao_dong_ho_2 *0.01 ; // 323*0.01 = 3.23 . sau khi đã nhập thành công 
     
-    if (  ( ket_qua_dong_ho_1 >= gia_tri_hien_thi_nhap_vao_dong_ho_1 ) && (  ket_qua_dong_ho_2  >= gia_tri_hien_thi_nhap_vao_dong_ho_2   )  )// thỏa mãn yêu cầu    
+    if (  ( ket_qua_dong_ho_1 >= gia_tri_hien_thi_nhap_vao_dong_ho_1 ) && (  ket_qua_dong_ho_2  >= gia_tri_hien_thi_nhap_vao_dong_ho_2   ) && ( khoa_dk_xa_loc == 0)   )// thỏa mãn yêu cầu    
       {
          cho_phep_xa = 1;
          chay_1_lan_ben_phai = 0;  // set lại biến để vào if khúc 5 giây 
          chay_1_lan_ben_trai = 0;  // set lại biến để vào if khúc 10 giây 
          tgian_truocdo = tgian_htai;  // set lại thời gian hiện tại bằng thời gian arduino
-         
+         khoa_dk_xa_loc = 1;        //vừa vào lệnh if ngay lập tức không cho thỏa mãn nữa để tránh lỗi đọc lại giá trị đo được
       }
       
     tgian_htai = millis();
@@ -202,12 +203,13 @@ if      ( cho_phep_xa == 1 )
                 
                 digitalWrite(khoa_van_1, LOW); // thường hở
                  digitalWrite(khoa_van_2, LOW); // thường hở
-                
+                https://github.com/new
                 digitalWrite(van_ra, LOW); // thường hở (đóng) tùy ý 
 
                 chay_1_lan_ben_trai =1;     // chặn vào if phần 10 giây               
                 tgian_truocdo = tgian_htai; // thời gian trước đó = thời gian arduino (tgian hiện tại) để ( tgian_htai - tgian_truocdo =0 ) 
                 cho_phep_xa = 0;            //nhưng sẽ không đếm lại do ( cho_phep_xa = 0 ) tức không vào lại vòng lặp
+                khoa_dk_xa_loc = 0 ;  // trả về bằng 0 khi hoàn tất quá trình xả 
               }       
               
     } 
